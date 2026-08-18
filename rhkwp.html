@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USB 시리얼 로봇 제어기</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        textarea { width: 100%; height: 150px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-radius; margin-bottom: 15px; resize: vertical; }
+        button { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 10px; }
+        .btn-connect { background-color: #28a745; color: white; }
+        .btn-send { background-color: #007bff; color: white; }
+        #status { font-size: 14px; color: #666; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔌 USB 로봇 제어기</h2>
+    <button class="btn-connect" onclick="connectSerial()">1. ESP32 USB 연결하기</button>
+    <br><br>
+    <textarea id="commandInput" placeholder="명령어를 입력하세요.&#10;예시:&#10;앞으로 9초 전진&#10;왼쪽으로 40도 회전&#10;앞으로 4초 전진"></textarea>
+    <button class="btn-send" onclick="sendCommands()">2. 동작 실행</button>
+    <div id="status">상태: 연결 되지 않음</div>
+</div>
+
+<script>
+    let port;
+    let writer;
+
+    // 1. USB 시리얼 포트 연결
+    async function connectSerial() {
+        const statusDiv = document.getElementById("status");
+        try {
+            // 사용자에게 시리얼 포트 선택 창 표시
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 }); // ESP32와 속도 맞춤
+            
+            const textEncoder = new TextEncoderStream();
+            const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+            writer = textEncoder.writable.getWriter();
+            
+            statusDiv.innerText = "상태: ESP32 연결 성공!";
+            statusDiv.style.color = "green";
+        } catch (err) {
+            console.error("연결 오류:", err);
+            statusDiv.innerText = "상태: 연결 실패 또는 취소됨";
+            statusDiv.style.color = "red";
+        }
+    }
+
+    // 2. 명령어 줄 단위 전송
+    async function sendCommands() {
+        const statusDiv = document.getElementById("status");
+        const text = document.getElementById("commandInput").value;
+
+        if (!writer) {
+            alert("먼저 [ESP32 USB 연결하기] 버튼을 눌러 포트를 연결해주세요!");
+            return;
+        }
+
+        if (!text.trim()) {
+            alert("명령어를 입력해주세요!");
+            return;
+        }
+
+        // ESP32로 데이터 전송 (문자열 끝에 줄바꿈 추가)
+        await writer.write(text + "\n");
+        statusDiv.innerText = "상태: 명령어 전송 완료!";
+    }
+</script>
+
+</body>
+</html>
