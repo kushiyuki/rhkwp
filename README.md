@@ -1,1 +1,1 @@
-[# rhkwp](https://kushiyuki.github.io/rhkwp/)
+https://kushiyuki.github.io/rhkwp/
